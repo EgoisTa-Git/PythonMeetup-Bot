@@ -15,6 +15,10 @@
 ```bash
 pip install -r requirements.txt
 ```
+- Необходимо применить все миграции:
+```bash
+python manage.py migrate
+```
 - Для запуска админ-панели необходимо выполнить команду:
 ```bash
 python manage.py runserver
