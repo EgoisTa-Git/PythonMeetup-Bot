@@ -14,13 +14,13 @@ class CustomUserAdmin(UserAdmin):
     list_display = [
         'tg_id',
         'username',
-        'first_name',
-        'last_name',
+        'real_name',
         'role',
+        'ready_to_chat',
     ]
     list_filter = [
         'role',
-        'is_active',
+        'ready_to_chat',
     ]
     add_fieldsets = (
         (
@@ -30,10 +30,14 @@ class CustomUserAdmin(UserAdmin):
                     'tg_id',
                     'username',
                     'role',
-                    'first_name',
-                    'last_name',
+                    'ready_to_chat',
+                    'real_name',
+                    'work_place',
+                    'topics',
+                    'about_me',
                     'password1',
                     'password2',
+                    'publish_date',
                 )
             }
         ),
@@ -46,13 +50,17 @@ class CustomUserAdmin(UserAdmin):
                     'tg_id',
                     'username',
                     'role',
-                    'first_name',
-                    'last_name',
+                    'ready_to_chat',
+                    'real_name',
+                    'work_place',
+                    'topics',
+                    'about_me',
                     'is_active',
                     'is_staff',
                     'is_superuser',
                     'password',
-                    'bot_state'
+                    'bot_state',
+                    'publish_date',
                 )
             }
         ),
