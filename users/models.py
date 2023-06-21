@@ -37,11 +37,23 @@ class CustomUser(AbstractUser):
         blank=True,
         help_text='Как к тебе могут обращаться другие участники?',
     )
+    city = models.CharField(
+        'Город',
+        max_length=50,
+        blank=True,
+        help_text='Из какого ты города?',
+    )
     work_place = models.CharField(
         'Место работы и должность',
         max_length=100,
         blank=True,
         help_text='Где и кем ты работаешь?',
+    )
+    stack = models.CharField(
+        'Стек технологий',
+        max_length=150,
+        blank=True,
+        help_text='Твой стек. Какие технологии используешь в работе?',
     )
     topics = models.CharField(
         'Предпочитаемые темы для общения',
