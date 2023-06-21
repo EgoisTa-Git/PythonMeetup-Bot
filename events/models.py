@@ -29,7 +29,6 @@ class Event(models.Model):
 
 
 class Report(models.Model):
-    topic = models.TextField(verbose_name='тема')
     event = models.ForeignKey(
         Event,
         verbose_name='мероприятие',
@@ -38,6 +37,7 @@ class Report(models.Model):
         CustomUser,
         verbose_name='докладчик',
         on_delete=models.CASCADE, related_name='reports')
+    topic = models.CharField(max_length=255, verbose_name='тема')
     started_at = models.DateTimeField(verbose_name='время начала')
     ended_at = models.DateTimeField(verbose_name='время окончания')
     modified = models.DateTimeField(auto_now=True)
@@ -56,7 +56,7 @@ class Donation(models.Model):
         verbose_name='спонсор',
         on_delete=models.DO_NOTHING,
         related_name='donations')
-    amount = models.IntegerField(default=0)
+    amount = models.IntegerField(verbose_name='Сумма', default=0)
     donation_date = models.DateField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
 
@@ -69,7 +69,7 @@ class Donation(models.Model):
 
 
 class Question(models.Model):
-    text = models.TextField(verbose_name='вопрос')
+    content = models.CharField(max_length=255, verbose_name='вопрос')
     interviewer = models.ForeignKey(
         CustomUser,
         verbose_name='интервьюер',
@@ -88,4 +88,4 @@ class Question(models.Model):
         verbose_name_plural = 'вопросы'
 
     def __str__(self):
-        return f'{self.question}'
+        return f'{self.content}'
