@@ -8,6 +8,7 @@ from admins.admin import users_admin
 
 # @admin.register(CustomUser)
 class CustomUserModelAdmin(admin.ModelAdmin):
+    paginate_by = 20
     add_form = CustomUserCreationForm
     form = CustomUserChangeForm
     model = CustomUser
@@ -16,8 +17,10 @@ class CustomUserModelAdmin(admin.ModelAdmin):
         'username',
         'first_name',
         'last_name',
+        'is_active',
         'role',
     ]
+    list_editable = ['is_active',]
     list_filter = [
         'role',
         'is_active',
