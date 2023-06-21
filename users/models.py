@@ -19,11 +19,11 @@ class CustomUser(AbstractUser):
         'ID в Telegram',
         null=True,
     )
-    bot_state = models.IntegerField(
+    bot_state = models.CharField(
         'Текущее состояния бота',
-        default=0,
+        max_length=50,
         blank=True,
-        help_text="Номер стейта"
+        help_text='Стейт машина'
     )
     ready_to_chat = models.BooleanField(
         'Готовность общаться',
