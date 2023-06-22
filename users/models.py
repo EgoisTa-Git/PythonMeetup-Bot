@@ -12,10 +12,9 @@ ROLES = [
 
 class CustomUser(AbstractUser):
     role = models.CharField(
-        'роль',
+        'Роль',
         max_length=30,
         choices=ROLES,
-        default='guest',
         blank=True,
     )
     tg_id = models.IntegerField(
