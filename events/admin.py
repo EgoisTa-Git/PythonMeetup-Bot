@@ -1,10 +1,7 @@
 from django.contrib import admin
-from django.contrib.auth import get_user_model
-from django.contrib.auth.admin import UserAdmin
-from .models import Event, Report, Donation, Question, Person
+from .models import Event, Report, Donation, GuestQuestion
 
 
-# Register your models here.
 class EventModelAdmin(admin.ModelAdmin):
     list_display = ['title', 'description', 'address', 'start_date', 'end_date', 'creator']
     list_display_links = ['title',]
@@ -20,12 +17,13 @@ class EventModelAdmin(admin.ModelAdmin):
     )
 
 
-class QuesttionInline(admin.StackedInline):
-    model = Question
+class GuestQuestionInline(admin.StackedInline):
+    model = GuestQuestion
     extra = 0
 
+
 class ReportModelAdmin(admin.ModelAdmin):
-    inlines = [QuesttionInline]
+    inlines = [GuestQuestionInline]
     list_display = ['topic', 'speaker', 'event', 'started_at', 'ended_at']
     list_display_links = ['topic', 'speaker', ]
     list_editable = ['started_at', 'ended_at']
@@ -43,7 +41,8 @@ class ReportModelAdmin(admin.ModelAdmin):
         }),
     )
 
-class QuestionModelAdmin(admin.ModelAdmin):
+
+class GuestQuestionModelAdmin(admin.ModelAdmin):
     list_display = ['author', 'content', 'report']
     raw_id_fields = ['author', ]
     list_filter = ['author', 'report', ]
@@ -71,41 +70,3 @@ class DonationModelAdmin(admin.ModelAdmin):
             )
         }),
     )
-
-
-class PersonModelAdmin(admin.ModelAdmin):
-    list_display = [
-        'tg_id',
-        'username',
-        'first_name',
-        'last_name',
-        'is_active',
-        'role',
-    ]
-    list_editable = ['is_active', ]
-    list_filter = ['role', 'is_active', ]
-    fieldsets = (
-        (None, {'fields': (('username', 'password'), ('tg_id', 'bot_state'))}),
-        ('Персональная информация', {
-            'classes': ('collapse', 'extrapretty'),
-            'fields': (('first_name', 'last_name'), )
-        }),
-        ('Разрешения', {
-            'classes': ('collapse', 'extrapretty'),
-            'fields': ('role', 'is_active', 'is_staff', 'is_superuser')
-        }),
-        ('Дополнительная информация', {
-            'classes': ('collapse', 'extrapretty'),
-            'fields': ('date_joined', 'last_login')
-        }),
-    )
-    add_fieldsets = (
-        (
-            None,
-            {
-                'fields': ('tg_id', 'username', 'password1', 'password2'),
-            }
-        ),
-    )
-    search_fields = ('tg_id', 'username', 'first_name', 'last_name')
-    readonly_fields = ['date_joined', 'last_login', ]
