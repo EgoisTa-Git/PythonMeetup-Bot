@@ -23,10 +23,58 @@ class Person(AbstractUser):
         null=True,
     )
     bot_state = models.IntegerField(
-        'Текущее состояния бота',
+        'Статус бота',
         default=0,
         blank=True,
-        help_text="Номер стейта"
+        help_text='номер стейта'
+    )
+    ready_to_chat = models.BooleanField(
+        'Готовность общаться',
+        default=False,
+        db_index=True,
+        help_text='Анкета заполнена?',
+    )
+    real_name = models.CharField(
+        'Имя',
+        max_length=50,
+        blank=True,
+        help_text='Как к тебе могут обращаться другие участники?',
+    )
+    city = models.CharField(
+        'Город',
+        max_length=50,
+        blank=True,
+        help_text='Из какого города?',
+    )
+    work_place = models.CharField(
+        'Место работы и должность',
+        max_length=100,
+        blank=True,
+        help_text='Где и кем ты работаешь?',
+    )
+    stack = models.CharField(
+        'Стек технологий',
+        max_length=150,
+        blank=True,
+        help_text='Твой стек. Какие технологии используешь в работе?',
+    )
+    topics = models.CharField(
+        'Предпочитаемые темы для общения',
+        max_length=150,
+        blank=True,
+        help_text='О чем хочешь пообщаться?',
+    )
+    about_me = models.CharField(
+        'Информация о пользователе',
+        max_length=250,
+        blank=True,
+        help_text='Расскажи ещё немного о себе (хобби, пет-проекты и т.д.)',
+    )
+    publish_date = models.DateTimeField(
+        'Дата и время публикации анкеты',
+        null=True,
+        blank=True,
+        db_index=True,
     )
 
     class Meta:
