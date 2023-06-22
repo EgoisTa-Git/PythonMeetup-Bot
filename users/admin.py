@@ -1,26 +1,29 @@
 from django.contrib import admin
 from django.contrib.auth import get_user_model
-from django.contrib.auth.admin import UserAdmin
+# from django.contrib.auth.admin import UserAdmin
 
 from .forms import CustomUserCreationForm, CustomUserChangeForm
 from .models import CustomUser
+from admins.admin import users_admin
 
-
-@admin.register(CustomUser)
-class CustomUserAdmin(UserAdmin):
+# @admin.register(CustomUser)
+class CustomUserModelAdmin(admin.ModelAdmin):
+    paginate_by = 20
     add_form = CustomUserCreationForm
     form = CustomUserChangeForm
     model = CustomUser
     list_display = [
         'tg_id',
         'username',
-        'real_name',
+        'first_name',
+        'last_name',
+        'is_active',
         'role',
-        'ready_to_chat',
     ]
+    list_editable = ['is_active',]
     list_filter = [
         'role',
-        'ready_to_chat',
+        'is_active',
     ]
     add_fieldsets = (
         (
@@ -30,16 +33,10 @@ class CustomUserAdmin(UserAdmin):
                     'tg_id',
                     'username',
                     'role',
-                    'ready_to_chat',
-                    'real_name',
-                    'city',
-                    'work_place',
-                    'stack',
-                    'topics',
-                    'about_me',
+                    'first_name',
+                    'last_name',
                     'password1',
                     'password2',
-                    'publish_date',
                 )
             }
         ),
@@ -52,20 +49,16 @@ class CustomUserAdmin(UserAdmin):
                     'tg_id',
                     'username',
                     'role',
-                    'ready_to_chat',
-                    'real_name',
-                    'city',
-                    'work_place',
-                    'stack',
-                    'topics',
-                    'about_me',
+                    'first_name',
+                    'last_name',
                     'is_active',
                     'is_staff',
                     'is_superuser',
                     'password',
-                    'bot_state',
-                    'publish_date',
+                    'bot_state'
                 )
             }
         ),
     )
+
+users_admin.register(CustomUser)
