@@ -21,4 +21,4 @@ from django.contrib.admin.sites import all_sites
 
 urlpatterns = [
     path(f'{site.name}/', site.urls) for site in all_sites
-] # + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]

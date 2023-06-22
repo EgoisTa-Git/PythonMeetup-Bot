@@ -3,10 +3,13 @@ from django.contrib import admin
 # Register your models here.
 class DefaultAdminSite(admin.AdminSite):
     name = 'admin'
-    permission = None
+    # permission = 'is_superuser'
 
     def get_app_list(self, request, app_label=None):
         return list(self._build_app_dict(request, app_label).values())
+
+    # def has_permission(self, request):
+    #     return super().has_permission(request) and (not getattr(self, 'permission', None) or request.user.has_perm(self.permission))
 
     def admin_view(self, view, cacheable = False):
 
@@ -26,22 +29,7 @@ class DefaultAdminSite(admin.AdminSite):
 
 default_admin = admin.sites.site
 
-
-class CustomUserAdminSite(DefaultAdminSite):
-    permission = None
-
-
-users_admin = CustomUserAdminSite(name='users-admin')
-
-
-class TelegramBotAdminSite(DefaultAdminSite):
-    permission = None
-
-
-tgbot_admin = TelegramBotAdminSite(name='tgbot-admin')
-
-class EventsAdminSite(DefaultAdminSite):
-    permission = None
-
-
-events_admin = EventsAdminSite(name='events-admin')
+# class EventsAdminSite(DefaultAdminSite):
+#     permission = None
+#
+# events_admin = EventsAdminSite(name='events-admin')
