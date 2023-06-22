@@ -4,6 +4,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
 
 from users.models import CustomUser
+from meetup_bot.guests_chat import invite_to_chat
 
 
 class TGBot(object):
@@ -104,26 +105,35 @@ def handle_role(bot, update, context):
         return 'HANDLE_ROLE'
     message = context.bot.send_message(
         text=welcome_message,
-        chat_id=update.effective_chat.id,
+        chat_id=chat_id,
     )
     context.bot.edit_message_reply_markup(
-        chat_id=message.chat_id,
+        chat_id=chat_id,
         message_id=message.message_id,
         reply_markup=reply_markup,
     )
     query = update.callback_query
     if query:
         context.bot.delete_message(
-            query.message.chat_id,
+            chat_id,
             query.message.message_id,
         )
     return 'HANDLE_MENU'
 
 
 def handle_menu(bot, update, context):
-    """Заглушка для дальнейшей навигации по меню. Реальную функцию можно писать уже в отдельном файле."""
-    message = context.bot.send_message(
-        text='welcome_message',
-        chat_id=update.effective_chat.id,
-    )
-    return 'START'
+    """Метод обработки выбора в главном меню"""
+    user = context.user_data['user']
+    chat_id = context.user_data['chat_id']
+    menu_selected = update.callback_query.data
+    if menu_selected == 'meet':
+        new_bot_state = invite_to_chat(bot, update, context)
+        return new_bot_state
+    elif menu_selected == 'question':
+        pass
+        # return 'QUESTION'
+    elif menu_selected == 'donate':
+        pass
+        # return 'DONATE'
+    else:
+        return 'HANDLE_MENU'

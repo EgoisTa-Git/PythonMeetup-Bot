@@ -5,6 +5,8 @@ from django.core.management import BaseCommand
 
 from meetup_bot.tg_bot_main import TGBot, handle_role, start, handle_menu
 
+from meetup_bot.guests_chat import invite_to_chat
+
 
 class Command(BaseCommand):
     def handle(self, *args, **options):
@@ -15,6 +17,7 @@ class Command(BaseCommand):
                     'START': start,
                     'HANDLE_ROLE': handle_role,
                     'HANDLE_MENU': handle_menu,
+                    'CHAT_INVITE': invite_to_chat,
                 }
             )
             tg_bot.updater.start_polling()
