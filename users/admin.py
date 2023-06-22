@@ -1,71 +1,46 @@
 from django.contrib import admin
-from django.contrib.auth import get_user_model
-from django.contrib.auth.admin import UserAdmin
-
-from .forms import CustomUserCreationForm, CustomUserChangeForm
 from .models import CustomUser
 
 
-@admin.register(CustomUser)
-class CustomUserAdmin(UserAdmin):
-    add_form = CustomUserCreationForm
-    form = CustomUserChangeForm
-    model = CustomUser
+# Register your models here.
+class CustomUserModelAdmin(admin.ModelAdmin):
     list_display = [
         'tg_id',
         'username',
-        'real_name',
+        'first_name',
+        'last_name',
         'role',
-        'ready_to_chat',
+        'is_subscriber',
+        'is_active',
     ]
-    list_filter = [
-        'role',
-        'ready_to_chat',
-    ]
+    list_editable = ['is_active', ]
+    list_filter = ['role', 'is_active', 'is_subscriber',]
+    fieldsets = (
+        (None, {'fields': (
+            ('username', 'password'),
+            ('tg_id', 'bot_state'),
+            ('is_subscriber', 'is_active'),
+        )}),
+        ('Персональная информация', {
+            'classes': ('collapse', 'extrapretty'),
+            'fields': (('first_name', 'last_name'), )
+        }),
+        ('Разрешения', {
+            'classes': ('collapse', 'extrapretty'),
+            'fields': ('role', 'is_staff', 'is_superuser')
+        }),
+        ('Дополнительная информация', {
+            'classes': ('collapse', 'extrapretty'),
+            'fields': ('date_joined', 'last_login')
+        }),
+    )
     add_fieldsets = (
         (
             None,
             {
-                'fields': (
-                    'tg_id',
-                    'username',
-                    'role',
-                    'ready_to_chat',
-                    'real_name',
-                    'city',
-                    'work_place',
-                    'stack',
-                    'topics',
-                    'about_me',
-                    'password1',
-                    'password2',
-                    'publish_date',
-                )
+                'fields': ('tg_id', 'username', 'password1', 'password2'),
             }
         ),
     )
-    fieldsets = (
-        (
-            None,
-            {
-                'fields': (
-                    'tg_id',
-                    'username',
-                    'role',
-                    'ready_to_chat',
-                    'real_name',
-                    'city',
-                    'work_place',
-                    'stack',
-                    'topics',
-                    'about_me',
-                    'is_active',
-                    'is_staff',
-                    'is_superuser',
-                    'password',
-                    'bot_state',
-                    'publish_date',
-                )
-            }
-        ),
-    )
+    search_fields = ('tg_id', 'username', 'first_name', 'last_name')
+    readonly_fields = ['date_joined', 'last_login', ]
