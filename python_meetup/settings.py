@@ -43,11 +43,12 @@ INSTALLED_APPS = [
 
     'admins',
     'events',
+    'users.apps.UsersConfig',
     'meetup_bot.apps.MeetupBotConfig',
     'django.contrib.auth',
 ]
 
-AUTH_USER_MODEL = 'events.Person'
+AUTH_USER_MODEL = 'users.CustomUser'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
