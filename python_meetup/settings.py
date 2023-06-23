@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'events',
     'users.apps.UsersConfig',
     'meetup_bot.apps.MeetupBotConfig',
+    'polls.apps.PollsConfig',
     'django.contrib.auth',
 ]
 
