@@ -11,12 +11,19 @@ class Event(models.Model):
     address = models.CharField(
         max_length=255,
         verbose_name='место проведения')
-    start_date = models.DateTimeField(verbose_name='Начало')
-    end_date = models.DateTimeField(verbose_name='Окончание')
     creator = models.ForeignKey(
         CustomUser,
         verbose_name='организатор',
-        on_delete=models.CASCADE)
+        on_delete=models.CASCADE,
+        related_name='events'
+    )
+    guests = models.ManyToManyField(
+        CustomUser,
+        verbose_name='участники',
+        related_name='meetups'
+    )
+    start_date = models.DateTimeField(verbose_name='Начало')
+    end_date = models.DateTimeField(verbose_name='Окончание')
     modified = models.DateTimeField(
         verbose_name='последние изменения',
         auto_now=True)
