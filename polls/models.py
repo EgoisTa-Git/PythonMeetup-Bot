@@ -75,4 +75,4 @@ class Poll(models.Model):
         verbose_name_plural = 'анкеты'
 
     def __str__(self):
-        return  f'Анкета "{self.title}" ({self.event})'
+        return  f'ID: {self.id} Название: {self.title} ({self.event})'
