@@ -1,8 +1,23 @@
 from django.contrib import admin
 from .models import Event, Report, Donation, GuestQuestion
+from meetup_bot.management.commands.startbot import bot_mailing
+
+
+class ReportInline(admin.TabularInline):
+    model = Report
+    extra = 0
+    fieldsets = (
+        (None, {
+            'fields': (
+                ('topic', 'speaker', ),
+                ('started_at', 'ended_at'),
+            )
+        }),
+    )
 
 
 class EventModelAdmin(admin.ModelAdmin):
+    inlines = [ReportInline]
     list_display = ['title', 'description', 'address', 'start_date', 'end_date', 'creator']
     list_display_links = ['title',]
     raw_id_fields = ('creator', )
@@ -24,11 +39,11 @@ class GuestQuestionInline(admin.StackedInline):
 
 class ReportModelAdmin(admin.ModelAdmin):
     inlines = [GuestQuestionInline]
-    list_display = ['topic', 'speaker', 'event', 'started_at', 'ended_at']
+    list_display = ['topic', 'speaker', 'event', 'started_at', 'ended_at', 'modified']
     list_display_links = ['topic', 'speaker', ]
     list_editable = ['started_at', 'ended_at']
     raw_id_fields = ('speaker',)
-    list_filter = ['event', 'speaker', ]
+    list_filter = ['event', 'speaker', 'started_at']
     readonly_fields = ['modified', ]
     fieldsets = (
         (None, {
@@ -40,6 +55,25 @@ class ReportModelAdmin(admin.ModelAdmin):
             )
         }),
     )
+    actions = ['publish']
+
+    def publish(self, request, queryset):
+        """Направляет рассылку на подписчиков"""
+        subscribers_ids = CustomUser.objects.filter(
+            is_subscriber=True, is_active=True)\
+            .values_list('id', flat=True)
+
+        mailing_message = '''\
+        Спасибо за подписку!
+        Мероприятия на сегодняшний день: 
+        спикер: {topic} {speaker}  {started_at} - {ended_at}
+        '''
+        reports = queryset
+        bot_mailing(ids=subscribers_ids, message=mailing_message)
+        self.message_user(request, f'Рассылка отправлена {subscribers_ids.count()} подписчикам.')
+        pass
+
+    publish.short_description = 'Сделать рассылку подписчикам'
 
 
 class GuestQuestionModelAdmin(admin.ModelAdmin):

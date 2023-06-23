@@ -3,7 +3,12 @@ from .models import CustomUser
 from events.models import Report
 
 
-class ReportInline(admin.StackedInline):
+class PollInline(admin.TabularInline):
+    model = CustomUser.polls.through
+    extra = 0
+
+
+class ReportInline(admin.TabularInline):
     model = Report
     extra = 0
     fieldsets = (
@@ -17,7 +22,7 @@ class ReportInline(admin.StackedInline):
 
 
 class CustomUserModelAdmin(admin.ModelAdmin):
-    inlines = [ReportInline]
+    inlines = [ReportInline, PollInline]
     list_display = [
         'tg_id',
         'username',
@@ -27,7 +32,7 @@ class CustomUserModelAdmin(admin.ModelAdmin):
         'is_subscriber',
         'is_active',
     ]
-    list_editable = ['is_active', ]
+    # list_editable = ['is_active', ]
     list_filter = ['role', 'is_active', 'is_subscriber',]
     fieldsets = (
         (None, {'fields': (
