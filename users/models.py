@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.base_user import BaseUserManager
 
 
 # Create your models here.
@@ -7,7 +8,15 @@ ROLES = [
         ('manager', 'менеджер'),
         ('guest', 'гость'),
         ('speaker', 'спикер'),
-    ]
+]
+
+
+class SubscribedManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset()\
+            .filter(
+            is_subscriber=True,
+            is_active=True)
 
 
 class CustomUser(AbstractUser):
@@ -15,7 +24,6 @@ class CustomUser(AbstractUser):
         'роль',
         max_length=30,
         choices=ROLES,
-        default='guest',
         blank=True,
     )
     tg_id = models.IntegerField(
@@ -32,6 +40,8 @@ class CustomUser(AbstractUser):
         verbose_name='подписчик',
         default=False
     )
+    objects = BaseUserManager()
+    subscribed = SubscribedManager()
 
     class Meta:
         verbose_name = 'участник'
