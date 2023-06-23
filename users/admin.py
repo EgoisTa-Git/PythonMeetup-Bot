@@ -6,14 +6,14 @@ from events.models import Report
 class ReportInline(admin.StackedInline):
     model = Report
     extra = 0
-    # fieldsets = (
-    #     (None, {
-    #         'fields': (
-    #             ('topic', 'event', ),
-    #             ('started_at', 'ended_at'),
-    #         )
-    #     }),
-    # )
+    fieldsets = (
+        (None, {
+            'fields': (
+                ('topic', 'event', ),
+                ('started_at', 'ended_at'),
+            )
+        }),
+    )
 
 
 class CustomUserModelAdmin(admin.ModelAdmin):
