@@ -1,9 +1,23 @@
 from django.contrib import admin
 from .models import CustomUser
+from events.models import Report
 
 
-# Register your models here.
+class ReportInline(admin.StackedInline):
+    model = Report
+    extra = 0
+    # fieldsets = (
+    #     (None, {
+    #         'fields': (
+    #             ('topic', 'event', ),
+    #             ('started_at', 'ended_at'),
+    #         )
+    #     }),
+    # )
+
+
 class CustomUserModelAdmin(admin.ModelAdmin):
+    inlines = [ReportInline]
     list_display = [
         'tg_id',
         'username',
@@ -44,3 +58,5 @@ class CustomUserModelAdmin(admin.ModelAdmin):
     )
     search_fields = ('tg_id', 'username', 'first_name', 'last_name')
     readonly_fields = ['date_joined', 'last_login', ]
+    list_per_page = 20
+    save_on_top = True
