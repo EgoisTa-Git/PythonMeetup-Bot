@@ -8,12 +8,13 @@ from users.models import CustomUser
 
 class TGBot(object):
     """Описывает работу бота"""
+
     def __init__(self, tg_token, states_functions):
         self.tg_token = tg_token
         self.states_functions = states_functions
         self.updater = Updater(token=self.tg_token, use_context=True)
-        self.updater.dispatcher.add_handler(CallbackQueryHandler(self.get_user(self.handle_users_reply)))
         self.updater.dispatcher.add_handler(MessageHandler(Filters.text, self.get_user(self.handle_users_reply)))
+        self.updater.dispatcher.add_handler(CallbackQueryHandler(self.get_user(self.handle_users_reply)))
         self.updater.dispatcher.add_handler(CommandHandler('start', self.get_user(self.handle_users_reply)))
 
     def handle_users_reply(self, update, context):
@@ -34,7 +35,7 @@ class TGBot(object):
         context.user_data.update({'chat_id': chat_id, 'username': username})
 
         state_handler = self.states_functions[user_state]
-        next_state = state_handler(context.bot, update, context)
+        next_state = state_handler(update, context)
         user.bot_state = next_state
         user.save()
 
@@ -51,10 +52,11 @@ class TGBot(object):
                 user.save()
             context.user_data['user'] = user
             return func(update, context)
+
         return wrapper
 
 
-def start(bot, update, context):
+def start_role(bot, update, context):
     """Метод вывода стартового диалога"""
     chat_id = update.message.chat_id
     user = context.user_data['user']
