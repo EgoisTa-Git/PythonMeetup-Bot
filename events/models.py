@@ -24,6 +24,7 @@ class Event(models.Model):
     class Meta:
         verbose_name = 'мероприятие'
         verbose_name_plural = 'мероприятия'
+        ordering = ('start_date',)
 
     def __str__(self):
         return f"{self.title} {self.start_date.year}"
@@ -37,7 +38,8 @@ class Report(models.Model):
     speaker = models.ForeignKey(
         CustomUser,
         verbose_name='докладчик',
-        on_delete=models.CASCADE, related_name='reports')
+        on_delete=models.CASCADE,
+        related_name='reports')
     topic = models.CharField(max_length=255, verbose_name='тема')
     started_at = models.DateTimeField(verbose_name='время начала')
     ended_at = models.DateTimeField(verbose_name='время окончания')
@@ -46,6 +48,7 @@ class Report(models.Model):
     class Meta:
         verbose_name = 'доклад'
         verbose_name_plural = 'доклады'
+        ordering = ('started_at',)
 
     def __str__(self):
         return f'{self.topic} ({self.speaker})'
