@@ -19,6 +19,10 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path
 
+admin.site.site_header = 'Python Meetup'
+admin.site.site_title = 'Python Meetup'
+admin.site.index_title = 'Python Meetup administration'
+
 
 urlpatterns = [
     path('', admin.site.urls),

@@ -1,13 +1,14 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
+from polls.models import Poll
 
-# Create your models here.
+
 ROLES = [
         ('manager', 'менеджер'),
         ('guest', 'гость'),
         ('speaker', 'спикер'),
-    ]
+]
 
 
 class CustomUser(AbstractUser):
@@ -30,6 +31,11 @@ class CustomUser(AbstractUser):
     is_subscriber = models.BooleanField(
         verbose_name='подписчик',
         default=False
+    )
+    polls = models.ManyToManyField(
+        Poll,
+        verbose_name='опросы',
+        related_name='users'
     )
 
     class Meta:

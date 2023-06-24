@@ -1,9 +1,28 @@
 from django.contrib import admin
 from .models import CustomUser
+from events.models import Report
 
 
-# Register your models here.
+class PollInline(admin.TabularInline):
+    model = CustomUser.polls.through
+    extra = 0
+
+
+class ReportInline(admin.TabularInline):
+    model = Report
+    extra = 0
+    fieldsets = (
+        (None, {
+            'fields': (
+                ('topic', 'event', ),
+                ('started_at', 'ended_at'),
+            )
+        }),
+    )
+
+
 class CustomUserModelAdmin(admin.ModelAdmin):
+    inlines = [ReportInline, PollInline]
     list_display = [
         'tg_id',
         'username',
@@ -13,7 +32,7 @@ class CustomUserModelAdmin(admin.ModelAdmin):
         'is_subscriber',
         'is_active',
     ]
-    list_editable = ['is_active', ]
+    # list_editable = ['is_active', ]
     list_filter = ['role', 'is_active', 'is_subscriber',]
     fieldsets = (
         (None, {'fields': (
@@ -44,3 +63,5 @@ class CustomUserModelAdmin(admin.ModelAdmin):
     )
     search_fields = ('tg_id', 'username', 'first_name', 'last_name')
     readonly_fields = ['date_joined', 'last_login', ]
+    list_per_page = 20
+    save_on_top = True
