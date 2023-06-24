@@ -1,9 +1,9 @@
 """Основной модуль бота"""
-
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
 
 from users.models import CustomUser
+from meetup_bot.services import start, invite_to_chat, ask_question, handle_speaker, handle_donate, handle_schedule, \
+    handle_speaker_from_schedule, write_speaker_from_schedule
 
 
 class TGBot(object):
@@ -15,7 +15,18 @@ class TGBot(object):
         self.updater = Updater(token=self.tg_token, use_context=True)
         self.updater.dispatcher.add_handler(MessageHandler(Filters.text, self.get_user(self.handle_users_reply)))
         self.updater.dispatcher.add_handler(CallbackQueryHandler(self.get_user(self.handle_users_reply)))
-        self.updater.dispatcher.add_handler(CommandHandler('start', self.get_user(self.handle_users_reply)))
+        self.updater.dispatcher.add_handler(CommandHandler('start', self.start_command))
+
+    def start_command(self, update, context):
+        """Обработчик команды /start"""
+        chat_id = update.message.chat_id
+        username = update.message.from_user.username
+        user, created = CustomUser.objects.get_or_create(tg_id=chat_id, defaults={'username': username})
+        if created:
+            user.is_active = False
+            user.save()
+        context.user_data['user'] = user
+        self.handle_users_reply(update, context)
 
     def handle_users_reply(self, update, context):
         """Метод, который запускается при любом сообщении от пользователя и решает как его обработать"""
@@ -35,11 +46,14 @@ class TGBot(object):
         context.user_data.update({'chat_id': chat_id, 'username': username})
 
         state_handler = self.states_functions[user_state]
-        next_state = state_handler(update, context)
+        next_state = state_handler(context.bot, update, context)
+
         user.bot_state = next_state
         user.save()
 
     def get_user(self, func):
+        """Получает пользователя из базы данных и передает его в дальнейшую функцию"""
+
         def wrapper(update, context):
             chat_id = context.user_data.get('chat_id')
             username = context.user_data.get('username')
@@ -56,76 +70,26 @@ class TGBot(object):
         return wrapper
 
 
-def start_role(bot, update, context):
-    """Метод вывода стартового диалога"""
-    chat_id = update.message.chat_id
-    user = context.user_data['user']
-    if user.role in ['guest', 'speaker', 'manager']:
-        return user.bot_state
-    else:
-        custom_keyboard = [
-            [InlineKeyboardButton('Гость', callback_data='guest'),
-             InlineKeyboardButton('Спикер', callback_data='speaker'), ]
-        ]
-        reply_markup = InlineKeyboardMarkup(custom_keyboard)
-
-        update.message.reply_text(
-            'Привет! Это PythonMeetupBot! Выберите свою роль.',
-            reply_markup=reply_markup,
-        )
-        return 'HANDLE_ROLE'
-
-
-def handle_role(bot, update, context):
-    """Метод обработки выбора роли"""
+def handle_menu(bot, update, context):
+    """Обработчик для навигации в меню бота"""
     user = context.user_data['user']
     chat_id = context.user_data['chat_id']
-    role_selected = update.callback_query.data
-    welcome_message = 'Привет! Это PythonMeetupBot - чатбот, в котором  можно узнать расписание выступлений на нашем ' \
-                      'митапе, а также задать вопрос спикеру во время его выступления. А еще здесь можно знакомиться ' \
-                      'с другими участниками конференции и поддержать нас донатом!'
-    keyboard = [
-        [InlineKeyboardButton("Хочу познакомиться", callback_data='meet')],
-        [InlineKeyboardButton("Хочу задать вопрос", callback_data='question')],
-        [InlineKeyboardButton("Хочу задонатить", callback_data='donate')],
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    menu_selected = update.callback_query.data
 
-    if role_selected == 'guest':
-        user.role = 'guest'
-        user.is_active = True
-        user.save()
-    elif role_selected == 'speaker':
-        user.role = 'speaker'
-        user.save()
-        bot.send_message(
-            chat_id=chat_id,
-            text='Для подтверждения регистрации в роли спикера напишите менеджеру @meetup.support',
-        )
+    menu_options = {
+        'meet': invite_to_chat,
+        'question': ask_question,
+        'donate': handle_donate,
+        'back': start,
+        'write_speaker': handle_speaker,
+        'schedule': handle_schedule,
+        'write_speaker_from_schedule': handle_speaker_from_schedule,
+    }
+
+    if menu_selected.startswith('write_') and menu_selected.split('_')[1].isdigit():
+        write_speaker_from_schedule(bot, update, context)
+    elif menu_selected in menu_options:
+        new_bot_state = menu_options[menu_selected](bot, update, context)
+        return new_bot_state
     else:
-        return 'HANDLE_ROLE'
-    message = context.bot.send_message(
-        text=welcome_message,
-        chat_id=update.effective_chat.id,
-    )
-    context.bot.edit_message_reply_markup(
-        chat_id=message.chat_id,
-        message_id=message.message_id,
-        reply_markup=reply_markup,
-    )
-    query = update.callback_query
-    if query:
-        context.bot.delete_message(
-            query.message.chat_id,
-            query.message.message_id,
-        )
-    return 'HANDLE_MENU'
-
-
-def handle_menu(bot, update, context):
-    """Заглушка для дальнейшей навигации по меню. Реальную функцию можно писать уже в отдельном файле."""
-    message = context.bot.send_message(
-        text='welcome_message',
-        chat_id=update.effective_chat.id,
-    )
-    return 'START'
+        return 'HANDLE_MENU'
