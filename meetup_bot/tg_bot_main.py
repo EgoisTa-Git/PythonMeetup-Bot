@@ -80,16 +80,6 @@ def handle_role(bot, update, context):
     user = context.user_data['user']
     chat_id = context.user_data['chat_id']
     role_selected = update.callback_query.data
-    welcome_message = 'Привет! Это PythonMeetupBot - чатбот, в котором  можно узнать расписание выступлений на нашем ' \
-                      'митапе, а также задать вопрос спикеру во время его выступления. А еще здесь можно знакомиться ' \
-                      'с другими участниками конференции и поддержать нас донатом!'
-    keyboard = [
-        [InlineKeyboardButton("Хочу познакомиться", callback_data='meet')],
-        [InlineKeyboardButton("Хочу задать вопрос", callback_data='question')],
-        [InlineKeyboardButton("Хочу задонатить", callback_data='donate')],
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
     if role_selected == 'guest':
         user.role = 'guest'
         user.is_active = True
@@ -103,6 +93,22 @@ def handle_role(bot, update, context):
         )
     else:
         return 'HANDLE_ROLE'
+    next_bot_state = show_menu(bot, update, context)
+    return next_bot_state
+
+
+def show_menu(bot, update, context):
+    """Метод отображает главное меню"""
+    chat_id = context.user_data['chat_id']
+    welcome_message = 'Привет! Это PythonMeetupBot - чатбот, в котором  можно узнать расписание выступлений на нашем ' \
+                      'митапе, а также задать вопрос спикеру во время его выступления. А еще здесь можно знакомиться ' \
+                      'с другими участниками конференции и поддержать нас донатом!'
+    keyboard = [
+        [InlineKeyboardButton("Хочу познакомиться", callback_data='meet')],
+        [InlineKeyboardButton("Хочу задать вопрос", callback_data='question')],
+        [InlineKeyboardButton("Хочу задонатить", callback_data='donate')],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
     message = context.bot.send_message(
         text=welcome_message,
         chat_id=chat_id,
@@ -135,5 +141,3 @@ def handle_menu(bot, update, context):
     elif menu_selected == 'donate':
         pass
         # return 'DONATE'
-    else:
-        return 'HANDLE_MENU'

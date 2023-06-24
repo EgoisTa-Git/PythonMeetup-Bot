@@ -26,4 +26,21 @@ def invite_to_chat(bot, update, context):
             chat_id,
             query.message.message_id,
         )
-    return 'HANDLE_ROLE'
+    return 'HANDLE_INVITE'
+
+
+def handle_chat_invite(bot, update, context):
+    """Метод обработки выбора в главном меню"""
+    from meetup_bot.tg_bot_main import show_menu
+    menu_selected = update.callback_query.data
+    if menu_selected == 'meet':
+        new_bot_state = send_questions(bot, update, context)
+    else:
+        new_bot_state = show_menu(bot, update, context)
+    return new_bot_state
+
+
+def send_questions(bot, update, context):
+    from meetup_bot.tg_bot_main import show_menu
+    new_bot_state = show_menu(bot, update, context)
+    return new_bot_state
