@@ -1,61 +1,37 @@
 import datetime
 from django.db import models
 
-
-class PollQuestion(models.Model):
-    title = models.CharField(
-        max_length=255,
-        verbose_name='вопрос')
-    published = models.DateTimeField(
-        verbose_name='дата публикации',
-        default=datetime.datetime.now())
-    is_active = models.BooleanField(
-        verbose_name='опубликован')
-
-    class Meta:
-        verbose_name = 'вопрос'
-        verbose_name_plural = 'вопросы'
-
-    def __str__(self):
-        return self.title
-
-
-class PollAnswer(models.Model):
-    question = models.ForeignKey(
-        PollQuestion,
-        verbose_name='вопрос',
-        on_delete=models.CASCADE,
-        related_name='answers')
-    answer = models.CharField(
-        max_length=255,
-        verbose_name='ответ')
-    votes = models.IntegerField(
-        verbose_name='голосов',
-        default=0)
-
-    class Meta:
-        verbose_name = 'ответ'
-        verbose_name_plural = 'ответы'
-
-    def __str__(self):
-        return self.answer
+from users.models import CustomUser
 
 
 class Poll(models.Model):
-    title = models.CharField(
+    user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.PROTECT,
+        verbose_name='пользователь',
+        related_name='polls'
+    )
+    name = models.CharField(
         max_length=255,
-        verbose_name='название',
+        verbose_name='имя'
     )
-    event = models.ForeignKey(
-        'events.Event',
-        on_delete=models.CASCADE,
-        verbose_name='мероприятие',
-        related_name='polls'
+    city = models.CharField(
+        max_length=255,
+        verbose_name='город'
     )
-    question = models.ManyToManyField(
-        PollQuestion,
-        verbose_name='вопрос',
-        related_name='polls'
+    job = models.CharField(
+        max_length=255,
+        verbose_name='работа'
+    )
+    stack = models.CharField(
+        max_length=255,
+        verbose_name='стек'
+    )
+    topics = models.TextField(
+        verbose_name='темы'
+    )
+    about = models.TextField(
+        verbose_name='о себе'
     )
     created = models.DateTimeField(
         auto_now_add=True,
@@ -67,7 +43,7 @@ class Poll(models.Model):
     )
     is_active = models.BooleanField(
         default=True,
-        verbose_name='активно'
+        verbose_name='активна'
     )
 
     class Meta:
@@ -75,4 +51,4 @@ class Poll(models.Model):
         verbose_name_plural = 'анкеты'
 
     def __str__(self):
-        return  f'ID: {self.id} Название: {self.title} ({self.event})'
+        return f'Анкета N {self.id} ({self.user})'
