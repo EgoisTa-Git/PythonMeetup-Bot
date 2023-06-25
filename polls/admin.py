@@ -1,35 +1,25 @@
 from django.contrib import admin
 
-from .models import Poll, PollQuestion, PollAnswer
-
-
-class PollQuestionInline(admin.TabularInline):
-    model = PollQuestion
-    extra = 1
-
-
-class PollAnswerInline(admin.TabularInline):
-    model = PollAnswer
-    extra = 1
-
-
-class PollQuestionModelAdmin(admin.ModelAdmin):
-    inlines = [PollAnswerInline]
-    list_display = ['title', 'is_active']
-    fieldsets = (
-        (None, {
-            'fields': (
-                'title', 'is_active',
-            )
-        }),
-    )
-
-
-class PollAnswerModelAdmin(admin.ModelAdmin):
-    list_display = ['answer', 'votes']
-    list_display_links = ['answer']
+from .models import Poll
 
 
 class PollModelAdmin(admin.ModelAdmin):
-    list_display = ['title', 'is_active']
-    raw_id_fields = ('question', 'event')
+    list_display = ['id', 'user', 'name', 'city',
+                    'job', 'stack', 'topics',
+                    'about', 'created', 'is_active']
+    raw_id_fields = ('user',)
+    search_fields = ('name', 'city', 'job', 'stack', 'topics', 'about')
+    list_display_links = ('id', 'name')
+    list_filter = ('is_active', 'created')
+
+    fieldsets = (
+        (None, {
+            'fields': (
+                'is_active',
+                ('name', 'user', ),
+                ('city', 'job', 'stack', ),
+                'topics', 'about',
+                'created',
+            )
+        }),
+    )
