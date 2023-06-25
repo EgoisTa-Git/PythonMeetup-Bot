@@ -1,110 +1,153 @@
 """Основной модуль бота"""
 
+from textwrap import dedent
+
+from django.conf import settings
+
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
+from telegram.ext import (
+    Updater,
+    CommandHandler,
+    MessageHandler,
+    Filters,
+    CallbackQueryHandler,
+)
 
 from users.models import CustomUser
-from meetup_bot.guests_chat import invite_to_chat
+
+from meetup_bot.guests_chat import (
+    get_name,
+    get_city,
+    get_job,
+    get_stack,
+    get_topics,
+    get_about,
+    finish_register,
+)
 
 
-class TGBot(object):
-    """Описывает работу бота"""
-    def __init__(self, tg_token, states_functions):
-        self.tg_token = tg_token
-        self.states_functions = states_functions
-        self.updater = Updater(token=self.tg_token, use_context=True)
-        self.updater.dispatcher.add_handler(CallbackQueryHandler(self.get_user(self.handle_users_reply)))
-        self.updater.dispatcher.add_handler(MessageHandler(Filters.text, self.get_user(self.handle_users_reply)))
-        self.updater.dispatcher.add_handler(CommandHandler('start', self.get_user(self.handle_users_reply)))
+def bot():
+    updater = Updater(token=settings.TG_BOT_APIKEY, use_context=True)
+    dispatcher = updater.dispatcher
+    dispatcher.add_handler(CallbackQueryHandler(handle_users_reply))
+    dispatcher.add_handler(MessageHandler(Filters.text, handle_users_reply))
+    dispatcher.add_handler(CommandHandler('start', handle_users_reply))
+    updater.start_polling()
+    updater.idle()
 
-    def handle_users_reply(self, update, context):
-        """Метод, который запускается при любом сообщении от пользователя и решает как его обработать"""
-        user = context.user_data['user']
-        if update.message:
-            user_reply = update.message.text
-            chat_id = update.message.chat_id
-            username = update.message.from_user.username
-        elif update.callback_query:
-            user_reply = update.callback_query.data
-            chat_id = update.callback_query.message.chat_id
-            username = update.callback_query.message.from_user.username
-        else:
-            return
 
-        user_state = user.bot_state if user.bot_state else 'START'
-        context.user_data.update({'chat_id': chat_id, 'username': username})
+def handle_users_reply(update, context):
+    if update.message:
+        user_reply = update.message.text
+        chat_id = update.message.chat_id
+        username = update.message.from_user.username
+    elif update.callback_query:
+        user_reply = update.callback_query.data
+        chat_id = update.callback_query.message.chat_id
+        username = update.callback_query.message.from_user.username
+    else:
+        return
 
-        state_handler = self.states_functions[user_state]
-        next_state = state_handler(context.bot, update, context)
+    user, created = CustomUser.objects.get_or_create(
+        tg_id=chat_id,
+        defaults={'username': username},
+    )
+    if created:
+        user.is_active = False
+        user.save()
+    context.user_data['user'] = user
+    context.user_data['chat_id'] = chat_id
+
+    if user_reply == '/start':
+        user_state = 'START'
+    else:
+        user_state = user.bot_state
+
+    states_functions = {
+        'START': start,
+        'HANDLE_ROLE': handle_role,
+        'HANDLE_MENU': handle_menu,
+        'GET_CITY': get_city,
+        'GET_JOB': get_job,
+        'GET_STACK': get_stack,
+        'GET_TOPICS': get_topics,
+        'GET_ABOUT': get_about,
+        'FINISH_REGISTER': finish_register,
+    }
+    state_handler = states_functions[user_state]
+    try:
+        next_state = state_handler(update, context)
         user.bot_state = next_state
         user.save()
-
-    def get_user(self, func):
-        def wrapper(update, context):
-            chat_id = context.user_data.get('chat_id')
-            username = context.user_data.get('username')
-            if not chat_id:
-                chat_id = update.message.chat_id
-                username = update.message.from_user.username
-            user, created = CustomUser.objects.get_or_create(tg_id=chat_id, defaults={'username': username})
-            if created:
-                user.is_active = False
-                user.save()
-            context.user_data['user'] = user
-            return func(update, context)
-        return wrapper
+    except Exception as err:
+        print(err)
 
 
-def start(bot, update, context):
+def start(update, context):
     """Метод вывода стартового диалога"""
     chat_id = update.message.chat_id
     user = context.user_data['user']
-    if user.role in ['guest', 'speaker', 'manager']:
-        return user.bot_state
-    else:
-        custom_keyboard = [
-            [InlineKeyboardButton('Гость', callback_data='guest'),
-             InlineKeyboardButton('Спикер', callback_data='speaker'), ]
-        ]
-        reply_markup = InlineKeyboardMarkup(custom_keyboard)
-
-        update.message.reply_text(
-            'Привет! Это PythonMeetupBot! Выберите свою роль.',
-            reply_markup=reply_markup,
-        )
-        return 'HANDLE_ROLE'
+    custom_keyboard = [
+        [InlineKeyboardButton('Гость', callback_data='guest'),
+         InlineKeyboardButton('Спикер', callback_data='speaker'), ]
+    ]
+    reply_markup = InlineKeyboardMarkup(custom_keyboard)
+    update.message.reply_text(
+        'Привет! Это Python Meetup Bot! Выберите свою роль.',
+        reply_markup=reply_markup,
+    )
+    return 'HANDLE_ROLE'
 
 
-def handle_role(bot, update, context):
+def handle_role(update, context):
     """Метод обработки выбора роли"""
     user = context.user_data['user']
     chat_id = context.user_data['chat_id']
     role_selected = update.callback_query.data
-    welcome_message = 'Привет! Это PythonMeetupBot - чатбот, в котором  можно узнать расписание выступлений на нашем ' \
-                      'митапе, а также задать вопрос спикеру во время его выступления. А еще здесь можно знакомиться ' \
-                      'с другими участниками конференции и поддержать нас донатом!'
-    keyboard = [
-        [InlineKeyboardButton("Хочу познакомиться", callback_data='meet')],
-        [InlineKeyboardButton("Хочу задать вопрос", callback_data='question')],
-        [InlineKeyboardButton("Хочу задонатить", callback_data='donate')],
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
     if role_selected == 'guest':
         user.role = 'guest'
-        user.is_active = True
         user.save()
     elif role_selected == 'speaker':
         user.role = 'speaker'
         user.save()
-        bot.send_message(
+        text = 'Для подтверждения регистрации в роли спикера напишите \
+        менеджеру @meetup.support'
+        context.bot.send_message(
             chat_id=chat_id,
-            text='Для подтверждения регистрации в роли спикера напишите менеджеру @meetup.support',
+            text=text,
         )
     else:
         return 'HANDLE_ROLE'
+    return show_menu(update, context)
+
+
+def show_menu(update, context):
+    """Метод отображает главное меню"""
+    chat_id = context.user_data['chat_id']
+    user = context.user_data['user']
+    welcome_message = '''
+    Python Meetup Bot - чат-бот, в котором  можно узнать расписание выступлений
+    на нашем митапе, а также задать вопрос спикеру во время его выступления. 
+    А еще здесь можно знакомиться с другими участниками конференции и 
+    поддержать нас донатом!
+    '''
+    welcome_message = dedent(welcome_message)
+    text = " ".join(line.strip() for line in welcome_message.splitlines())
+    if user.is_active:
+        keyboard = [
+            [InlineKeyboardButton("Начать общаться", callback_data='chat')],
+        ]
+    else:
+        keyboard = [
+            [InlineKeyboardButton("Хочу познакомиться", callback_data='meet')],
+        ]
+    keyboard = keyboard + [
+        [InlineKeyboardButton("Хочу задать вопрос", callback_data='question')],
+        [InlineKeyboardButton("Хочу задонатить", callback_data='donate')],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
     message = context.bot.send_message(
-        text=welcome_message,
+        text=text,
         chat_id=chat_id,
     )
     context.bot.edit_message_reply_markup(
@@ -121,19 +164,23 @@ def handle_role(bot, update, context):
     return 'HANDLE_MENU'
 
 
-def handle_menu(bot, update, context):
+def handle_menu(update, context):
     """Метод обработки выбора в главном меню"""
     user = context.user_data['user']
     chat_id = context.user_data['chat_id']
     menu_selected = update.callback_query.data
     if menu_selected == 'meet':
-        new_bot_state = invite_to_chat(bot, update, context)
-        return new_bot_state
+        return get_name(update, context)
+    elif menu_selected == 'chat':
+        # TODO Заглушка
+        context.bot.send_message(
+            text='Отправляем анкету',
+            chat_id=chat_id,
+        )
+        return show_menu(update, context)
     elif menu_selected == 'question':
-        pass
-        # return 'QUESTION'
+        # TODO Заглушка
+        return show_menu(update, context)
     elif menu_selected == 'donate':
-        pass
-        # return 'DONATE'
-    else:
-        return 'HANDLE_MENU'
+        # TODO Заглушка
+        return show_menu(update, context)
