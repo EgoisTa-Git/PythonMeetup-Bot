@@ -3,7 +3,8 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, Callb
 
 from users.models import CustomUser
 from meetup_bot.services import start, invite_to_chat, ask_question, handle_speaker, handle_donate, handle_schedule, \
-    handle_speaker_from_schedule, write_speaker_from_schedule
+    handle_speaker_from_schedule, write_speaker_from_schedule, get_name, get_city, get_job, get_stack, get_topics, \
+    get_about, finish_register, not_meet
 
 
 class TGBot(object):
@@ -84,6 +85,14 @@ def handle_menu(bot, update, context):
         'write_speaker': handle_speaker,
         'schedule': handle_schedule,
         'write_speaker_from_schedule': handle_speaker_from_schedule,
+        'get_name': get_name,
+        'get_city': get_city,
+        'get_job': get_job,
+        'get_stack': get_stack,
+        'get_topics': get_topics,
+        'get_about': get_about,
+        'finish_register': finish_register,
+        'not_meet': not_meet
     }
 
     if menu_selected.startswith('write_') and menu_selected.split('_')[1].isdigit():

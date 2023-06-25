@@ -164,8 +164,8 @@ def invite_to_chat(bot, update, context):
     """Приглашение познакомиться"""
     chat_id = context.user_data['chat_id']
     keyboard = [
-        [InlineKeyboardButton('Хочу познакомиться', callback_data='get_answers')],
-        [InlineKeyboardButton('Не хочу знакомиться', callback_data='menu')]
+        [InlineKeyboardButton('Хочу познакомиться', callback_data='get_name')],
+        [InlineKeyboardButton('Не хочу знакомиться', callback_data='not_meet')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -185,3 +185,106 @@ def invite_to_chat(bot, update, context):
             chat_id,
             query.message.message_id,
         )
+
+    return 'HANDLE_MENU'
+
+
+def not_meet(bot, update, context):
+    """Сообщение для пользователей, не желающих знакомиться"""
+    chat_id = context.user_data['chat_id']
+    keyboard = [[InlineKeyboardButton("На главную", callback_data='back')]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    context.bot.send_message(
+        text='Жаль!',
+        chat_id=chat_id,
+        reply_markup=reply_markup
+    )
+    return 'HANDLE_MENU'
+
+
+def get_name(bot, update, context):
+    """Запрос имени пользователя для анкеты"""
+    chat_id = context.user_data['chat_id']
+    question = 'Как к тебе могут обращаться другие участники?'
+    context.bot.send_message(
+        text=question,
+        chat_id=chat_id,
+    )
+    return 'GET_CITY'
+
+
+def get_city(bot, update, context):
+    """Запрос города пользователя для анкеты"""
+    context.user_data['name'] = update.message.text
+    chat_id = context.user_data['chat_id']
+    question = 'Из какого ты города?'
+    context.bot.send_message(
+        text=question,
+        chat_id=chat_id,
+    )
+    return 'GET_JOB'
+
+
+def get_job(bot, update, context):
+    """Запрос должности пользователя для анкеты"""
+    context.user_data['city'] = update.message.text
+    chat_id = context.user_data['chat_id']
+    question = 'Где и кем ты работаешь?'
+    context.bot.send_message(
+        text=question,
+        chat_id=chat_id,
+    )
+    return 'GET_STACK'
+
+
+def get_stack(bot, update, context):
+    """Запрос стека пользователя для анкеты"""
+    context.user_data['job'] = update.message.text
+    chat_id = context.user_data['chat_id']
+    question = 'Твой стек. Какие технологии используешь в работе?'
+    context.bot.send_message(
+        text=question,
+        chat_id=chat_id,
+    )
+    return 'GET_TOPICS'
+
+
+def get_topics(bot, update, context):
+    """Запрос предпологаемых тем общения пользователя для анкеты"""
+    context.user_data['stack'] = update.message.text
+    chat_id = context.user_data['chat_id']
+    question = 'О чем бы ты хотел пообщаться?'
+    context.bot.send_message(
+        text=question,
+        chat_id=chat_id,
+    )
+    return 'GET_ABOUT'
+
+
+def get_about(bot, update, context):
+    """Запрос интересов пользователя для анкеты"""
+    context.user_data['topics'] = update.message.text
+    chat_id = context.user_data['chat_id']
+    question = 'Расскажи ещё немного о себе (хобби, пет-проекты и т.д.)'
+    context.bot.send_message(
+        text=question,
+        chat_id=chat_id,
+    )
+    return 'FINISH_REGISTER'
+
+
+def finish_register(bot, update, context):
+    """Сообщение о завершении опроса пользователя для анкеты"""
+    context.user_data['about'] = update.message.text
+    chat_id = context.user_data['chat_id']
+    user = context.user_data['user']
+    user.is_active = True
+    user.save()
+    keyboard = [[InlineKeyboardButton("На главную", callback_data='back')]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    context.bot.send_message(
+        text='Анкета заполнена, регистрация завершена.',
+        chat_id=chat_id,
+        reply_markup=reply_markup
+    )
+    return 'START'
