@@ -32,11 +32,6 @@ class CustomUser(AbstractUser):
         verbose_name='подписчик',
         default=False
     )
-    polls = models.ManyToManyField(
-        Poll,
-        verbose_name='опросы',
-        related_name='users'
-    )
 
     class Meta:
         verbose_name = 'участник'
