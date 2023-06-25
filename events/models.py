@@ -74,7 +74,8 @@ class GuestQuestion(models.Model):
         on_delete=models.DO_NOTHING,
         related_name='questions'
     )
-    questioned_at = models.DateTimeField(verbose_name='дата')
+    questioned_at = models.DateTimeField(
+        auto_now_add=True, verbose_name='дата')
     modified = models.DateTimeField(auto_now=True)
 
     class Meta:
