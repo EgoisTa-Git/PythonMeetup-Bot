@@ -1,7 +1,5 @@
 from django.db import models
-from users.models import CustomUser
 
-# Create your models here.
 
 class Event(models.Model):
     title = models.CharField(
@@ -12,17 +10,27 @@ class Event(models.Model):
     address = models.CharField(
         max_length=255,
         verbose_name='место проведения')
+    creator = models.ForeignKey(
+        'users.CustomUser',
+        verbose_name='организатор',
+        on_delete=models.CASCADE,
+        related_name='events'
+    )
+    guests = models.ManyToManyField(
+        'users.CustomUser',
+        verbose_name='участники',
+        related_name='meetups'
+    )
     start_date = models.DateTimeField(verbose_name='Начало')
     end_date = models.DateTimeField(verbose_name='Окончание')
-    creator = models.ForeignKey(
-        CustomUser,
-        verbose_name='организатор',
-        on_delete=models.CASCADE)
-    modified = models.DateTimeField(auto_now=True)
+    modified = models.DateTimeField(
+        verbose_name='последние изменения',
+        auto_now=True)
 
     class Meta:
         verbose_name = 'мероприятие'
         verbose_name_plural = 'мероприятия'
+        ordering = ('start_date',)
 
     def __str__(self):
         return f"{self.title} {self.start_date.year}"
@@ -34,45 +42,29 @@ class Report(models.Model):
         verbose_name='мероприятие',
         on_delete=models.CASCADE, related_name='reports')
     speaker = models.ForeignKey(
-        CustomUser,
+        'users.CustomUser',
         verbose_name='докладчик',
-        on_delete=models.CASCADE, related_name='reports')
+        on_delete=models.CASCADE,
+        related_name='reports')
     topic = models.CharField(max_length=255, verbose_name='тема')
     started_at = models.DateTimeField(verbose_name='время начала')
     ended_at = models.DateTimeField(verbose_name='время окончания')
-    modified = models.DateTimeField(auto_now=True)
+    modified = models.DateTimeField(verbose_name='последние изменения',auto_now=True)
 
     class Meta:
         verbose_name = 'доклад'
         verbose_name_plural = 'доклады'
+        ordering = ('started_at',)
 
     def __str__(self):
         return f'{self.topic} ({self.speaker})'
 
 
-class Donation(models.Model):
-    donor = models.ForeignKey(
-        CustomUser,
-        verbose_name='спонсор',
-        on_delete=models.DO_NOTHING,
-        related_name='donations')
-    amount = models.IntegerField(verbose_name='Сумма', default=0)
-    donation_date = models.DateField(auto_now_add=True)
-    modified = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        verbose_name = 'чаевые'
-        verbose_name_plural = 'чаевые'
-
-    def __str__(self):
-        return f'{self.donor} ({self.amount} руб.)'
-
-
-class Question(models.Model):
+class GuestQuestion(models.Model):
     content = models.CharField(max_length=255, verbose_name='вопрос')
-    interviewer = models.ForeignKey(
-        CustomUser,
-        verbose_name='интервьюер',
+    author = models.ForeignKey(
+        'users.CustomUser',
+        verbose_name='автор',
         on_delete=models.CASCADE
     )
     report = models.ForeignKey(
@@ -81,6 +73,7 @@ class Question(models.Model):
         on_delete=models.DO_NOTHING,
         related_name='questions'
     )
+    questioned_at = models.DateTimeField(verbose_name='дата')
     modified = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -89,3 +82,21 @@ class Question(models.Model):
 
     def __str__(self):
         return f'{self.content}'
+
+
+class Donation(models.Model):
+    donor = models.ForeignKey(
+        'users.CustomUser',
+        verbose_name='спонсор',
+        on_delete=models.DO_NOTHING,
+        related_name='donations')
+    amount = models.IntegerField(verbose_name='сумма', default=0)
+    donation_date = models.DateField(verbose_name='дата перевода', auto_now_add=True)
+    modified = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'чаевые'
+        verbose_name_plural = 'чаевые'
+
+    def __str__(self):
+        return f'{self.donor} ({self.amount} руб.)'
