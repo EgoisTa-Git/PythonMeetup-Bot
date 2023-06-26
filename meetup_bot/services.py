@@ -93,7 +93,7 @@ def handle_donate(bot, update, context):
 
 def get_current_speaker():
     """Получить текущего спикера"""
-    now = timezone.now()
+    now = timezone.localtime(timezone.now())
     current_report = Report.objects.filter(started_at__lte=now, ended_at__gte=now).first()
     if current_report:
         return current_report.speaker.username
@@ -102,6 +102,7 @@ def get_current_speaker():
 
 def handle_speaker(bot, update, context):
     """Обработать спикера для отправки ему вопроса"""
+    now = timezone.localtime(timezone.now())
     query = update.callback_query
     query.answer()
     speaker_name = get_current_speaker()
@@ -109,8 +110,8 @@ def handle_speaker(bot, update, context):
     if speaker_name is None:
         update.callback_query.message.reply_text('В данный момент докладов нет.')
         return
-    context.user_data['report_id'] = Report.objects.filter(started_at__lte=timezone.now(),
-                                                           ended_at__gte=timezone.now()).first().id
+    context.user_data['report_id'] = Report.objects.filter(started_at__lte=now,
+                                                           ended_at__gte=now).first().id
     query.edit_message_text(text="Напишите ваш вопрос:")
     return 'HANDLE_MESSAGE'
 
@@ -119,7 +120,8 @@ def handle_schedule(bot, update, context):
     """Обработать расписание выступлений спикеров на сегодня"""
     query = update.callback_query
     query.answer()
-    reports_today = Report.objects.filter(started_at__date=timezone.now().date()).order_by('started_at')
+    now = timezone.localtime(timezone.now())
+    reports_today = Report.objects.filter(started_at__date=now).order_by('started_at')
 
     schedule_message = 'Список докладов на сегодня:\n\n'
     for report in reports_today:
@@ -128,13 +130,15 @@ def handle_schedule(bot, update, context):
     keyboard = [[InlineKeyboardButton("Назад", callback_data='back')],
                 [InlineKeyboardButton("Написать спикеру", callback_data='write_speaker_from_schedule')]]
     query.edit_message_text(text=schedule_message, reply_markup=InlineKeyboardMarkup(keyboard))
+    return 'WRITE_SCHEDULE'
 
 
 def handle_speaker_from_schedule(bot, update, context):
     """Обработать выбор спикера из расписания"""
     query = update.callback_query
     query.answer()
-    reports_today = Report.objects.filter(started_at__date=timezone.now().date()).order_by('started_at')
+    now = timezone.localtime(timezone.now())
+    reports_today = Report.objects.filter(started_at__date=now).order_by('started_at')
     speaker_buttons = [[InlineKeyboardButton(report.speaker.username, callback_data=f"write_{report.id}")]
                        for report in reports_today]
     keyboard = speaker_buttons + [[InlineKeyboardButton("На главную", callback_data='back')]]
@@ -243,15 +247,15 @@ def start_poll(bot, update, context):
         )
         return 'START'
 
-    questions = poll.question.all()
-
-    context.user_data['questions'] = list(questions)
-    context.user_data['current_question'] = context.user_data['questions'].pop(0)
-
-    context.bot.send_message(
-        text=context.user_data['current_question'].title,
-        chat_id=update.callback_query.message.chat_id,
-    )
+    # questions = poll.all()
+    #
+    # context.user_data['questions'] = list(questions)
+    # context.user_data['current_question'] = context.user_data['questions'].pop(0)
+    #
+    # context.bot.send_message(
+    #     text=context.user_data['current_question'].title,
+    #     chat_id=update.callback_query.message.chat_id,
+    # )
 
     return 'HANDLE_POLL_ANSWER'
 
