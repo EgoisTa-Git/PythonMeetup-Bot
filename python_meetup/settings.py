@@ -35,14 +35,18 @@ ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', [])
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
+
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'meetup_bot.apps.MeetupBotConfig',
+
+    'admins',
+    'events',
     'users.apps.UsersConfig',
+    'meetup_bot.apps.MeetupBotConfig',
+    'polls.apps.PollsConfig',
+    'django.contrib.auth',
 ]
 
 AUTH_USER_MODEL = 'users.CustomUser'
@@ -87,7 +91,6 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators

@@ -1,59 +1,61 @@
 from django.contrib import admin
-from django.contrib.auth import get_user_model
-from django.contrib.auth.admin import UserAdmin
-
-from .forms import CustomUserCreationForm, CustomUserChangeForm
 from .models import CustomUser
+from events.models import Report
 
 
-@admin.register(CustomUser)
-class CustomUserAdmin(UserAdmin):
-    add_form = CustomUserCreationForm
-    form = CustomUserChangeForm
-    model = CustomUser
+class ReportInline(admin.TabularInline):
+    model = Report
+    extra = 0
+    fieldsets = (
+        (None, {
+            'fields': (
+                ('topic', 'event', ),
+                ('started_at', 'ended_at'),
+            )
+        }),
+    )
+
+
+class CustomUserModelAdmin(admin.ModelAdmin):
+    inlines = [ReportInline]
     list_display = [
         'tg_id',
         'username',
         'first_name',
         'last_name',
         'role',
-    ]
-    list_filter = [
-        'role',
+        'is_subscriber',
         'is_active',
     ]
+    list_filter = ['role', 'is_active', 'is_subscriber',]
+    fieldsets = (
+        (None, {'fields': (
+            ('username', 'password'),
+            ('tg_id', 'bot_state'),
+            ('is_subscriber', 'is_active'),
+        )}),
+        ('Персональная информация', {
+            'classes': ('collapse', 'extrapretty'),
+            'fields': (('first_name', 'last_name'), )
+        }),
+        ('Разрешения', {
+            'classes': ('collapse', 'extrapretty'),
+            'fields': ('role', 'is_staff', 'is_superuser')
+        }),
+        ('Дополнительная информация', {
+            'classes': ('collapse', 'extrapretty'),
+            'fields': ('date_joined', 'last_login')
+        }),
+    )
     add_fieldsets = (
         (
             None,
             {
-                'fields': (
-                    'tg_id',
-                    'username',
-                    'role',
-                    'first_name',
-                    'last_name',
-                    'password1',
-                    'password2',
-                )
+                'fields': ('tg_id', 'username', 'password1', 'password2'),
             }
         ),
     )
-    fieldsets = (
-        (
-            None,
-            {
-                'fields': (
-                    'tg_id',
-                    'username',
-                    'role',
-                    'first_name',
-                    'last_name',
-                    'is_active',
-                    'is_staff',
-                    'is_superuser',
-                    'password',
-                    'bot_state'
-                )
-            }
-        ),
-    )
+    search_fields = ('tg_id', 'username', 'first_name', 'last_name')
+    readonly_fields = ['date_joined', 'last_login', ]
+    list_per_page = 20
+    save_on_top = True
