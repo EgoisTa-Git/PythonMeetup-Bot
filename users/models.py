@@ -24,11 +24,12 @@ class CustomUser(AbstractUser):
         'Текущее состояние бота',
         max_length=50,
         blank=True,
+        null=True,
         help_text='Стейт машина'
     )
     is_subscriber = models.BooleanField(
         verbose_name='подписчик',
-        default=False
+        default=True
     )
 
     class Meta:

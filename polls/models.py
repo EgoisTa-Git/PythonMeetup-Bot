@@ -7,7 +7,7 @@ from users.models import CustomUser
 class Poll(models.Model):
     user = models.ForeignKey(
         CustomUser,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         verbose_name='пользователь',
         related_name='polls'
     )
@@ -28,7 +28,7 @@ class Poll(models.Model):
         verbose_name='стек'
     )
     topics = models.TextField(
-        verbose_name='темы'
+        verbose_name='интересы'
     )
     about = models.TextField(
         verbose_name='о себе'

@@ -90,7 +90,7 @@ class Donation(models.Model):
     donor = models.ForeignKey(
         CustomUser,
         verbose_name='спонсор',
-        on_delete=models.DO_NOTHING,
+        on_delete=models.CASCADE,
         related_name='donations')
     amount = models.IntegerField(verbose_name='сумма', default=0)
     donation_date = models.DateField(verbose_name='дата перевода', auto_now_add=True)
