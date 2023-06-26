@@ -4,7 +4,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 from events.models import Report, GuestQuestion, Donation
 from users.models import CustomUser
-from polls.models import Poll, PollAnswer
+from polls.models import Poll
 
 
 def start(bot, update, context):
@@ -167,13 +167,11 @@ def handle_message(bot, update, context):
         user_id = update.effective_user.id
         author, created = CustomUser.objects.get_or_create(tg_id=user_id)
 
-        question = GuestQuestion(
+        question, status = GuestQuestion.objects.get_or_create(
             content=question_text,
-            questioned_at=questioned_at,
             report=report,
             author=author
         )
-        question.save()
 
         reply_markup = reply_markup_to_main()
         update.message.reply_text("Спасибо! Спикер ответит на ваш вопрос в конце своего доклада.",
