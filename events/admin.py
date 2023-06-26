@@ -1,9 +1,9 @@
 from django.contrib import admin
+from textwrap import dedent
 from .models import Event, Report, Donation, GuestQuestion
 from users.models import CustomUser
-'''
-from meetup_bot.management.commands.startbot import bot_mailing    #TODO
-'''
+
+
 
 class ReportInline(admin.TabularInline):
     model = Report
@@ -37,6 +37,33 @@ class EventModelAdmin(admin.ModelAdmin):
 class GuestQuestionInline(admin.StackedInline):
     model = GuestQuestion
     extra = 0
+    fieldsets = (
+        (None, {
+            'fields': (
+                ('content', 'author',),
+            )
+        }),
+    )
+
+
+def get_mailing(queryset):
+    """Возвращает сообщение для рассылки"""
+    reports_descriptions = []
+    for report in queryset:
+        report_date = report.started_at.strftime('%d-%m-%Y')
+        time_start = report.started_at.strftime('%H:%M')
+        time_finish = report.ended_at.strftime('%H:%M')
+        description = """\
+                Тема: %s
+                Докладчик: %s
+                Дата: %s
+                Время: %s-%s
+                """ % (report.topic, report.speaker,
+                       report_date, time_start, time_finish)
+        reports_descriptions.append(dedent(description))
+    mailing = 'Мероприятия на митапе:\n\n' +\
+              '\n'.join(reports_descriptions)
+    return mailing
 
 
 class ReportModelAdmin(admin.ModelAdmin):
@@ -59,33 +86,26 @@ class ReportModelAdmin(admin.ModelAdmin):
     )
     actions = ['publish']
 
-    def publish(self, request, queryset):
+    @admin.action(description='Рассылка')
+    def publish(self, request, queryset, bot):
         """Направляет рассылку на подписчиков"""
         subscribers_ids = CustomUser.objects.filter(
             is_subscriber=True, is_active=True)\
-            .values_list('id', flat=True)
-
-        mailing_message = '''\
-        Спасибо за подписку!
-        Мероприятия на сегодняшний день: 
-        спикер: {topic} {speaker}  {started_at} - {ended_at}
-        '''
-        reports = queryset
-
-        '''
-        bot_mailing(ids=subscribers_ids, message=mailing_message)    #TODO
-        '''
+            .values_list('tg_id', flat=True)
+        mailing_message = get_mailing(queryset)
+        for tg_id in subscribers_ids:
+            bot.send_message(
+                chat_id=tg_id,
+                message=dedent(mailing_message)
+            )
         self.message_user(request, f'Рассылка отправлена {subscribers_ids.count()} подписчикам.')
-        pass
-
-    publish.short_description = 'Сделать рассылку подписчикам'
 
 
 class GuestQuestionModelAdmin(admin.ModelAdmin):
     list_display = ['author', 'content', 'report']
     raw_id_fields = ['author', ]
     list_filter = ['author', 'report', ]
-    readonly_fields = ['report', 'questioned_at', ]
+    readonly_fields = ['questioned_at', ]
     fieldsets = (
         (None, {
             'fields': (

@@ -1,10 +1,12 @@
 """Модуль с используемыми функциями для обработки сообщений"""
+import pytz
+
 from django.utils import timezone
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 from events.models import Report, GuestQuestion, Donation
 from users.models import CustomUser
-from polls.models import Poll, PollAnswer
+from polls.models import Poll
 
 
 def start(bot, update, context):
@@ -62,12 +64,20 @@ def donate(bot, update, context):
     query = update.callback_query
     if query is not None:
         query.answer()
-        query.edit_message_text(text="Введите сумму вашего доната:")
+        reply_markup = reply_markup_to_main()
+        query.edit_message_text(
+            text="Введите сумму вашего доната в сообщении ниже:",
+            reply_markup=reply_markup
+        )
     return 'HANDLE_DONATE'
 
 
 def handle_donate(bot, update, context):
     """Обработать донат пользователя"""
+    if update.callback_query:
+        if update.callback_query.data == 'back':
+            return start(bot, update, context)
+
     try:
         amount = int(update.message.text)
     except ValueError:
@@ -93,7 +103,7 @@ def handle_donate(bot, update, context):
 
 def get_current_speaker():
     """Получить текущего спикера"""
-    now = timezone.now()
+    now = timezone.localtime(timezone.now())
     current_report = Report.objects.filter(started_at__lte=now, ended_at__gte=now).first()
     if current_report:
         return current_report.speaker.username
@@ -119,11 +129,13 @@ def handle_schedule(bot, update, context):
     """Обработать расписание выступлений спикеров на сегодня"""
     query = update.callback_query
     query.answer()
-    reports_today = Report.objects.filter(started_at__date=timezone.now().date()).order_by('started_at')
+    local_tz = pytz.timezone('Europe/Moscow')
+    current_date = timezone.now().astimezone(local_tz).date()
+    reports_today = Report.objects.filter(started_at__date=current_date).order_by('started_at')
 
     schedule_message = 'Список докладов на сегодня:\n\n'
     for report in reports_today:
-        schedule_message += f"{report.started_at.strftime('%H:%M')}/{report.ended_at.strftime('%H:%M')} - {report.speaker.username} - {report.topic}\n"
+        schedule_message += f"{report.started_at.astimezone(local_tz).strftime('%H:%M')}/{report.ended_at.astimezone(local_tz).strftime('%H:%M')} - {report.speaker.username} - {report.topic}\n"
 
     keyboard = [[InlineKeyboardButton("Назад", callback_data='back')],
                 [InlineKeyboardButton("Написать спикеру", callback_data='write_speaker_from_schedule')]]
@@ -234,52 +246,98 @@ def invite_to_chat(bot, update, context):
 
 def start_poll(bot, update, context):
     """Начальное сообщение для заполнения анкеты пользователем"""
-    poll = Poll.objects.filter(is_active=True).first()
-
-    if not poll:
-        reply_markup = reply_markup_to_main()
-        context.bot.send_message(
-            text='В данный момент нет активных анкет. Пожалуйста, попробуйте позже.',
-            chat_id=update.callback_query.message.chat_id,
-            reply_markup=reply_markup
-        )
-        return 'START'
-
-    questions = poll.question.all()
-
-    context.user_data['questions'] = list(questions)
-    context.user_data['current_question'] = context.user_data['questions'].pop(0)
+    user = CustomUser.objects.get(tg_id=update.effective_user.id)
+    poll = Poll.objects.create(user=user)
+    context.user_data['poll'] = poll
+    context.user_data['current_question'] = 'name'
 
     context.bot.send_message(
-        text=context.user_data['current_question'].title,
-        chat_id=update.callback_query.message.chat_id,
+        text='Как к тебе могут обращаться другие участники?',
+        chat_id=update.effective_user.id,
     )
-
     return 'HANDLE_POLL_ANSWER'
+
+
+def get_another_poll(bot, update, context):
+    """Функция для получения другой случайной анкеты"""
+    if update.callback_query.data == 'get_another_poll':
+        user_poll = context.user_data['poll']
+        other_poll = Poll.objects.filter(is_active=True).exclude(user=user_poll.user).order_by('?').first()
+
+        keyboard = [
+            [InlineKeyboardButton('На главную', callback_data='back')],
+            [InlineKeyboardButton('Получить другую анкету', callback_data='get_another_poll')]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        if other_poll:
+            context.bot.send_message(
+                text=f'Вот анкета другого случайного посетителя нашего митапа:\n{other_poll}',
+                chat_id=update.effective_chat.id,
+                reply_markup=reply_markup
+            )
+            return 'GET_ANOTHER_POLL'
+
+        else:
+            context.bot.send_message(
+                text='К сожалению, пока нет других активных анкет.',
+                chat_id=update.effective_chat.id,
+                reply_markup=reply_markup
+            )
+
+    elif update.callback_query.data == 'back':
+        return start(bot, update, context)
 
 
 def handle_poll_answer(bot, update, context):
     """Обработчик ответов пользователя для анкеты"""
+    questions = [
+        ('name', 'Как к тебе могут обращаться другие участники?'),
+        ('city', 'Из какого ты города?'),
+        ('job', 'Где и кем ты работаешь?'),
+        ('stack', 'Твой стек. Какие технологии используешь в работе?'),
+        ('topics', 'О чем бы ты хотел пообщаться?'),
+        ('about', 'Расскажи ещё немного о себе (хобби, пет-проекты и т.д.)'),
+    ]
+
+    poll = context.user_data['poll']
     current_question = context.user_data['current_question']
+    setattr(poll, current_question, update.message.text)
+    poll.save()
 
-    PollAnswer.objects.create(
-        question=current_question,
-        answer=update.message.text
-    )
-
-    if context.user_data['questions']:
-        context.user_data['current_question'] = context.user_data['questions'].pop(0)
-        context.bot.send_message(
-            text=context.user_data['current_question'].title,
-            chat_id=update.message.chat_id,
-        )
+    for num, (question, text) in enumerate(questions):
+        if question == current_question and num + 1 < len(questions):
+            next_question, next_text = questions[num + 1]
+            context.user_data['current_question'] = next_question
+            context.bot.send_message(
+                text=next_text,
+                chat_id=update.effective_chat.id,
+            )
+            break
     else:
-        reply_markup = reply_markup_to_main()
-        context.bot.send_message(
-            text='Отлично! Вот анкета другого случайного посетителя нашего митапа:',
-            chat_id=update.message.chat_id,
-            reply_markup=reply_markup
-        )
+        other_poll = Poll.objects.filter(is_active=True).exclude(user=poll.user).order_by('?').first()
+        if other_poll:
+            keyboard = [
+                [InlineKeyboardButton('На главную', callback_data='back')],
+                [InlineKeyboardButton('Получить другую анкету', callback_data='get_another_poll')]
+            ]
+
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            context.bot.send_message(
+                text=f'Вот анкета другого случайного посетителя нашего митапа:\n{other_poll}',
+                chat_id=update.effective_chat.id,
+                reply_markup=reply_markup
+            )
+            return 'GET_ANOTHER_POLL'
+
+        else:
+            reply_markup = reply_markup_to_main()
+            context.bot.send_message(
+                text='Спасибо! Вы первый, кто оставил анкету. Позже попробуйте запросить анкеты других участников!',
+                chat_id=update.effective_chat.id,
+                reply_markup=reply_markup
+            )
+
         return 'START'
 
     return 'HANDLE_POLL_ANSWER'

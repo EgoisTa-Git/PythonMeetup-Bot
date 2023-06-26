@@ -2,8 +2,9 @@
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
 
 from users.models import CustomUser
-from meetup_bot.services import start, invite_to_chat, ask_question, handle_speaker, donate, handle_donate, handle_schedule, \
-    handle_speaker_from_schedule, write_speaker_from_schedule, not_meet, start_poll, handle_poll_answer
+from meetup_bot.services import start, invite_to_chat, ask_question, handle_speaker, donate, handle_donate, \
+    handle_schedule, handle_speaker_from_schedule, write_speaker_from_schedule, not_meet, start_poll, \
+    get_another_poll, handle_poll_answer
 
 
 class TGBot(object):
@@ -87,6 +88,7 @@ def handle_menu(bot, update, context):
         'write_speaker_from_schedule': handle_speaker_from_schedule,
         'not_meet': not_meet,
         'start_poll': start_poll,
+        'get_another_poll': get_another_poll,
         'handle_poll_answer': handle_poll_answer
     }
 
